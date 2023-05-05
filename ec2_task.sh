@@ -24,6 +24,7 @@ INSTANCE_TYPE=t3.micro
 
 SUBNET_ID=$PUBLIC_SUBNET
 
+
 INSTANCE_NAMES=("one" "two" "three")
 
 
@@ -41,21 +42,43 @@ done
 
     for INSTANCE_NAME in "${INSTANCE_NAMES[@]}"; do
         INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$INSTANCE_NAME" --query 'Reservations[0].Instances[0].InstanceId' --output text)
-        echo "Wait a minute for instaces to run"
+        echo "Wait a minute for all instaces to run"
         sleep 30
-        echo "Checking if instances are running"
+        echo "Checking if all instances are running"
         INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].State.Name' --output text)
         if [ "$INSTANCE_STATE" = "running" ]; then
-            echo "$INSTANCE_NAME is running"
             #Add elastic IP 
             aws ec2 associate-address --instance-id $INSTANCE_ID --public-ip ${ELASTIC_IPS[i]}
                 # Stop instances one and two
             if [ "$INSTANCE_NAME" = "one" ] || [ "$INSTANCE_NAME" = "two" ]; then
                 aws ec2 stop-instances --instance-ids $INSTANCE_ID
-                echo "Instance $INSTANCE_NAME stopped"
+                #echo "Instance $INSTANCE_NAME stopped"
                
             fi
         else
             sleep 30
         fi
     done
+
+
+
+echo "Instance status:"
+echo "-----------------"
+RUNNING_INSTANCES=0
+STOPPED_INSTANCES=0
+for i in {0..2}; do
+    INSTANCE_NAME=${INSTANCE_NAMES[i]}
+    INSTANCE_ID=${INSTANCE_IDS[i]}
+    ELASTIC_IP=${ELASTIC_IPS[i]}
+    INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID --query 'Reservations[0].Instances[0].State.Name' --output text)
+    if [ "$INSTANCE_STATE" = "running" ]; then
+        echo "$INSTANCE_NAME is running with Elastic IP $ELASTIC_IP"
+        RUNNING_INSTANCES=$((RUNNING_INSTANCES+1))
+    else
+        echo "$INSTANCE_NAME is stopped with Elastic IP $ELASTIC_IP"
+        STOPPED_INSTANCES=$((STOPPED_INSTANCES+1))
+    fi
+done
+echo "-----------------"
+echo "Number of running instances: $RUNNING_INSTANCES"
+echo "Number of stopped instances: $STOPPED_INSTANCES"
