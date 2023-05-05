@@ -36,7 +36,7 @@ for i in {0..2}; do
 
 done
 
-echo "Wait a minute for instaces to run"
+
 # Check if instances are running
 
     for INSTANCE_NAME in "${INSTANCE_NAMES[@]}"; do
